@@ -14,7 +14,7 @@
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="200" />
         </Grid.ColumnDefinitions>
-        <Canvas Grid.Row="0" Grid.Column="0" Background="Bisque" MouseLeftButtonDown="myCanvas_MouseLeftButtonDown" MouseMove="myCanvas_MouseMove" x:Name="myCanvas"/>
+        <Canvas Grid.Row="0" Grid.Column="0" Background="Bisque" MouseLeftButtonDown="myCanvas_MouseLeftButtonDown" MouseLeftButtonUp="myCanvas_MouseLeftButtonUp" MouseMove="myCanvas_MouseMove" x:Name="myCanvas"/>
         <Grid Grid.Row="0" Grid.Column="1" Width="200" Background="AliceBlue">
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />

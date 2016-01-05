@@ -21,6 +21,7 @@ namespace Pocatello
     {
         private Point startLine;
         private Polyline line;
+        private List<Polyline> lines = new List<Polyline>();
         private ClickState state = ClickState.Obstacles;
         private Point start;
         private Point end;
@@ -68,15 +69,24 @@ namespace Pocatello
                     break;
             }
         }
+
         private void myCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && line != null)
+            if (e.LeftButton == MouseButtonState.Pressed && this.line != null)
             {
                 Point currentPoint = e.GetPosition(myCanvas);
                 if (startLine != currentPoint)
                 {
                     line.Points.Add(currentPoint);
                 }
+            }
+        }
+        private void myCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (this.line != null)
+            {
+                this.lines.Add(this.line);
+                this.line = null;
             }
         }
 
@@ -94,20 +104,22 @@ namespace Pocatello
 
         private void Button_Click_Find_Path(object sender, RoutedEventArgs e)
         {
-            RenderTargetBitmap renderBitmap =
-              new RenderTargetBitmap(
-                (int)myCanvas.RenderSize.Width,
-                (int)myCanvas.RenderSize.Height,
-                96d,
-                96d,
-                PixelFormats.Pbgra32);
-            renderBitmap.Render(myCanvas);
-            
-            using (System.IO.FileStream outStream = new System.IO.FileStream("./test.png", System.IO.FileMode.Create))
+            int w = (int)myCanvas.Width;
+            int h = (int)myCanvas.Height;
+            int[,] obstacles = new int[w, h];
+            for(int i = 0; i < w; i++)
             {
-                PngBitmapEncoder encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(renderBitmap));
-                encoder.Save(outStream);
+                for(int j = 0; j < h; j++)
+                {
+                    obstacles[i, j] = 0;
+                }
+            }
+            foreach(Polyline l in this.lines)
+            {
+                foreach(Point p in l.Points)
+                {
+                    
+                }
             }
         }
     }
