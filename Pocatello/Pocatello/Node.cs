@@ -8,9 +8,9 @@ namespace Pocatello
 {
     class Node
     {
-        private int F;
-        private int H;
-        private int G;
+        private int f;
+        private int h;
+        private int g;
         private Node parent;
         private int[] pos;
         private int[] d;
@@ -18,67 +18,97 @@ namespace Pocatello
         public Node(int[] n, int h)
         {
             pos = n;
-            G = 0;
-            H = h;
+            g = 0;
+            this.h = h;
             d = new int[] { 0, 0 };
-            F = G + H;
+            f = g + h;
             parent = this;
         }
         
         public Node(Node C, int[] pos, int g, int h, int[] d)
         {
             parent = C;
-            this.G = g;
-            this.H = h;
+            this.g = g;
+            this.h = h;
             this.d = d;
-            F = this.G + this.H;
+            f = this.g + this.h;
             this.pos = pos;
         }
-        
+
         public Node(Node C)
         {
-            this.d = C.getD();
-            this.parent = C.getParent();
-            this.F = C.getF();
-            this.G = C.getG();
-            this.H = C.getH();
-            this.pos = C.getPos();
+            d = C.D;
+            parent = C.Parent;
+            f = C.F;
+            g = C.G;
+            h = C.H;
+            pos = C.Pos;
         }
-        
-        public void setParent(Node c)
+
+        public Node Parent
         {
-            parent = c;
+            get
+            {
+                return parent;
+            }
+            set
+            {
+                parent = value;
+            }
         }
-        public Node getParent()
+        public int G
         {
-            return parent;
+            get
+            {
+                return g;
+            }
+            set
+            {
+                g = value;
+                f = g + h;
+            }
         }
-        public void setG(int g)
+        public int H
         {
-            G = g;
-            F = G + H;
+            get
+            {
+                return h;
+            }
+            set
+            {
+                h = value;
+                f = g + h;
+            }
         }
-        public int[] getD()
+        public int[] D
         {
-            return d;
+            get
+            {
+                return d;
+            }
+            set
+            {
+                d = value;
+            }
         }
-        public int[] getPos()
+        public int[] Pos
         {
-            return pos;
+            get
+            {
+                return pos;
+            }
+            set
+            {
+                pos = value;
+            }
         }
-        public int getG()
+        public int F
         {
-            return G;
+            get
+            {
+                return f;
+            }
         }
-        public int getF()
-        {
-            return F;
-        }
-        public int getH()
-        {
-            return H;
-        }
-        
         public override bool Equals(object obj)
         {
             int[] c = obj as int[];

@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace Pocatello
 {
@@ -12,15 +15,16 @@ namespace Pocatello
         private List<Node> closed = new List<Node>();
         private byte[,] obstacles;
         private int[] end;
-        private Node path = null;
+        private Node pathNode = null;
         private bool done = false;
-        
-        public void run(byte[,] obstacles, int[] start, int[] end, ref List<Node> nodes, ref Stack<int[]> path)
+        private Canvas canvas;
+
+        public Stack<int[]> run(byte[,] obstacles, int[] start, int[] end, System.Windows.Controls.Canvas canvas)
         {
+            this.canvas = canvas;
             this.end = end;
-            open.Add(new Node(start, HManhattan(start)));
             this.obstacles = obstacles;
-            
+
             for (int i = 0; i < obstacles.GetLength(0); i++)
             {
                 obstacles[i, 0] = 1;
@@ -31,7 +35,9 @@ namespace Pocatello
                 obstacles[0, i] = 1;
                 obstacles[obstacles.GetLength(0) - 1, i] = 1;
             }
-            if (obstacles[open[0].getPos()[0], open[0].getPos()[1]] == 1 || obstacles[end[0], end[1]] == 1)
+
+            open.Add(new Node(start, HManhattan(start)));
+            if (obstacles[open[0].Pos[0], open[0].Pos[1]] == 1 || obstacles[end[0], end[1]] == 1)
             {
                 open.RemoveAt(0);
             }
@@ -43,30 +49,32 @@ namespace Pocatello
                 open.RemoveAt(0);
                 lookForNeighboursJPS(closed[closed.Count() - 1]);
             }
-            open.AddRange(closed);
-            nodes = open;
-            
+            //open.AddRange(closed);
+            //nodes = open;
+
+            var pathStack = new Stack<int[]>();
             if (!done)
             {
-                path.Push(new int[] { -1, -1 });
+                pathStack.Push(new int[] { -1, -1 });
             }
             else
             {
-                while (!this.path.getParent().Equals(this.path.getPos()))
+                while (!pathNode.Parent.Equals(pathNode.Pos))
                 {
-                    path.Push(this.path.getPos());
-                    this.path = this.path.getParent();
+                    pathStack.Push(pathNode.Pos);
+                    pathNode = pathNode.Parent;
                 }
-                path.Push(this.path.getPos());
+                pathStack.Push(pathNode.Pos);
             }
+            return pathStack;
 
         }
         
         private void lookForNeighboursJPS(Node c)
         {
-            int[] n = c.getPos();
-            int[] d = c.getD();
-            int g = c.getG();
+            int[] n = c.Pos;
+            int[] d = c.D;
+            int g = c.G;
             if (Math.Abs(d[0]) + Math.Abs(d[1]) == 1)
             {
                 lookForNodeJPS(c, d, g + 10, new int[] { n[0] + d[0], n[1] + d[1] });
@@ -93,7 +101,7 @@ namespace Pocatello
             }
             else
             {
-                int[] p = c.getPos();
+                int[] p = c.Pos;
                 lookForNodeJPS(c, new int[] { 1, 0 }, 10, new int[] { p[0] + 1, p[1] });
                 lookForNodeJPS(c, new int[] { 0, 1 }, 10, new int[] { p[0], p[1] + 1 });
                 lookForNodeJPS(c, new int[] { 0, -1 }, 10, new int[] { p[0], p[1] - 1 });
@@ -168,7 +176,7 @@ namespace Pocatello
         
         private int lookForNode(int[] d, Node c, int g)
         {
-            int[] j = c.getPos();
+            int[] j = c.Pos;
             int[] n = new int[2];
             n[0] = j[0] + d[0];
             n[1] = j[1] + d[1];
@@ -177,17 +185,13 @@ namespace Pocatello
             {
                 return -1;
             }
-            insert(new Node(c, n, c.getG() + g, HManhattan(n), d));
+            insert(new Node(c, n, c.G + g, HManhattan(n), d));
             return -1;
         }
         
         private bool ignore(int[] n)
         {
-            if (obstacles[n[0], n[1]] == 1)
-            {
-                return true;
-            }
-            if (closed.FindIndex(se => se.Equals(n)) != -1)
+            if ((obstacles[n[0], n[1]] == 1) || (closed.FindIndex(se => se.Equals(n)) != -1))
             {
                 return true;
             }
@@ -196,38 +200,48 @@ namespace Pocatello
         
         private void insert(Node c)
         {
-            int[] n = c.getPos();
-            int F = c.getF();
+            int[] n = c.Pos;
+            int F = c.F;
             int i = open.FindIndex(se => se.Equals(n));
             if (i != -1)
             {
-                if (open[i].getF() > F)
+                if (open[i].F > F)
                 {
-                    open[i].setG(c.getG());
-                    open[i].setParent(c.getParent());
-                    open = open.OrderBy(o => o.getF()).ToList();
+                    open[i].G = c.G;
+                    open[i].Parent = c.Parent;
+                    open = open.OrderBy(o => o.F).ToList();
                 }
             }
             else
             {
-                bool continu = true;
-                int count = 0;
-                while (continu && count < open.Count())
+                bool inserted = false;
+                int max = open.Count();
+                for(int j = 0; j < max; j++)
                 {
-                    if (F < open[count].getF())
+                    if(F < open[j].F)
                     {
-                        open.Insert(count, c);
-                        continu = false;
+                        open.Insert(j, c);
+                        inserted = true;
+                        break;
                     }
-                    count++;
                 }
-                if (continu)
+                if (!inserted)
                 {
                     open.Add(c);
+                    var rekt = new System.Windows.Shapes.Rectangle();
+
+                    rekt.Width = 5;
+                    rekt.Height = 5;
+                    rekt.Stroke = new SolidColorBrush(Colors.BlueViolet);
+                    rekt.Fill = new SolidColorBrush(Colors.BlueViolet);
+                    Canvas.SetLeft(rekt, c.Pos[0]);
+                    Canvas.SetTop(rekt, c.Pos[1]);
+
+                    canvas.Children.Add(rekt);
                 }
                 if (n[0] == end[0] && n[1] == end[1])
                 {
-                    path = c;
+                    pathNode = c;
                     done = true;
                 }
             }
