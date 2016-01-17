@@ -1,27 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
+using System.ComponentModel;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace Pocatello
 {
     class PathFinder
     {
+        public delegate void AlgoDelegate(Node c);
+
         private List<Node> open = new List<Node>();
         private List<Node> closed = new List<Node>();
         private byte[,] obstacles;
         private int[] end;
         private Node pathNode = null;
         private bool done = false;
-        private Canvas canvas;
 
-        public Stack<int[]> run(byte[,] obstacles, int[] start, int[] end, System.Windows.Controls.Canvas canvas)
+        public Stack<int[]> run(byte[,] obstacles, int[] start, int[] end, AlgoDelegate alg, BackgroundWorker bgw)
         {
-            this.canvas = canvas;
             this.end = end;
             this.obstacles = obstacles;
 
@@ -44,13 +40,11 @@ namespace Pocatello
             
             while (open.Count() != 0 && !done)
             {
-
+                bgw.ReportProgress(0, open[0].Pos);
                 closed.Add(open[0]);
                 open.RemoveAt(0);
-                lookForNeighboursJPS(closed[closed.Count() - 1]);
+                alg(closed[closed.Count() - 1]);
             }
-            //open.AddRange(closed);
-            //nodes = open;
 
             var pathStack = new Stack<int[]>();
             if (!done)
@@ -59,7 +53,7 @@ namespace Pocatello
             }
             else
             {
-                while (!pathNode.Parent.Equals(pathNode.Pos))
+                while (pathNode.Parent != pathNode)
                 {
                     pathStack.Push(pathNode.Pos);
                     pathNode = pathNode.Parent;
@@ -67,10 +61,9 @@ namespace Pocatello
                 pathStack.Push(pathNode.Pos);
             }
             return pathStack;
-
         }
-        
-        private void lookForNeighboursJPS(Node c)
+
+        public void lookForNeighboursJPS(Node c)
         {
             int[] n = c.Pos;
             int[] d = c.D;
@@ -113,56 +106,56 @@ namespace Pocatello
             }
         }
         
-        private int lookForNodeJPS(Node c, int[] d, int g, int[] n)
+        private bool lookForNodeJPS(Node c, int[] d, int g, int[] n)
         {
             if (!ignore(n) && !done)
             {
                 if (n[0] == end[0] && n[1] == end[1])
                 {
                     insert(new Node(c, n, g, HManhattan(n), d));
-                    return 1;
+                    return true;
                 }
                 if (Math.Abs(d[0]) + Math.Abs(d[1]) == 1)
                 {
                     if ((obstacles[n[0] + d[1], n[1] + d[0]] == 1) && (obstacles[n[0] + d[1] + d[0], n[1] + d[0] + d[1]] == 0))
                     {
                         insert(new Node(c, n, g, HManhattan(n), d));
-                        return 1;
+                        return true;
                     }
                     if ((obstacles[n[0] - d[1], n[1] - d[0]] == 1) && (obstacles[n[0] - d[1] + d[0], n[1] - d[0] + d[1]] == 0))
                     {
                         insert(new Node(c, n, g + 10, HManhattan(n), d));
-                        return 1;
+                        return true;
                     }
                     return lookForNodeJPS(c, d, g + 10, new int[] { n[0] + d[0], n[1] + d[1] });
                 }
                 else if (Math.Abs(d[0]) + Math.Abs(d[1]) == 2)
                 {
-                    if (lookForNodeJPS(new Node(c, n, g, HManhattan(n), d), new int[] { d[0], 0 }, g + 10, new int[] { n[0] + d[0], n[1] }) == 1)
+                    if (lookForNodeJPS(new Node(c, n, g, HManhattan(n), d), new int[] { d[0], 0 }, g + 10, new int[] { n[0] + d[0], n[1] }))
                     {
                         insert(new Node(c, n, g, HManhattan(n), d));
                     }
-                    if (lookForNodeJPS(new Node(c, n, g, HManhattan(n), d), new int[] { 0, d[1] }, g + 10, new int[] { n[0], n[1] + d[1] }) == 1)
+                    if (lookForNodeJPS(new Node(c, n, g, HManhattan(n), d), new int[] { 0, d[1] }, g + 10, new int[] { n[0], n[1] + d[1] }))
                     {
                         insert(new Node(c, n, g, HManhattan(n), d));
                     }
                     if (obstacles[n[0] - d[0], n[1]] == 1 && obstacles[n[0] - d[0], n[1] + d[1]] == 0)
                     {
                         insert(new Node(c, n, g, HManhattan(n), d));
-                        return 1;
+                        return true;
                     }
                     if (obstacles[n[0], n[1] - d[1]] == 1 && obstacles[n[0] + d[0], n[1] - d[1]] == 0)
                     {
                         insert(new Node(c, n, g, HManhattan(n), d));
-                        return 1;
+                        return true;
                     }
                     return lookForNodeJPS(c, d, g + 14, new int[] { n[0] + d[0], n[1] + d[1] });
                 }
             }
-            return -1;
+            return false;
         }
-        
-        private void lookForNeighbours(Node c)
+
+        public void lookForNeighbours(Node c)
         {
             lookForNode(new int[] { 1, 0 }, c, 10);
             lookForNode(new int[] { 0, 1 }, c, 10);
@@ -173,29 +166,24 @@ namespace Pocatello
             lookForNode(new int[] { -1, 1 }, c, 14);
             lookForNode(new int[] { -1, -1 }, c, 14);
         }
-        
-        private int lookForNode(int[] d, Node c, int g)
+
+        private void lookForNode(int[] d, Node c, int g)
         {
-            int[] j = c.Pos;
-            int[] n = new int[2];
-            n[0] = j[0] + d[0];
-            n[1] = j[1] + d[1];
+            int[] n = new int[2] {
+                c.Pos[0] + d[0],
+                c.Pos[1] + d[1]
+            };
             
             if (ignore(n))
             {
-                return -1;
+                return;
             }
             insert(new Node(c, n, c.G + g, HManhattan(n), d));
-            return -1;
         }
         
         private bool ignore(int[] n)
         {
-            if ((obstacles[n[0], n[1]] == 1) || (closed.FindIndex(se => se.Equals(n)) != -1))
-            {
-                return true;
-            }
-            return false;
+            return (obstacles[n[0], n[1]] == 1) || (closed.FindIndex(se => se.Equals(n)) != -1);
         }
         
         private void insert(Node c)
@@ -228,16 +216,6 @@ namespace Pocatello
                 if (!inserted)
                 {
                     open.Add(c);
-                    var rekt = new System.Windows.Shapes.Rectangle();
-
-                    rekt.Width = 5;
-                    rekt.Height = 5;
-                    rekt.Stroke = new SolidColorBrush(Colors.BlueViolet);
-                    rekt.Fill = new SolidColorBrush(Colors.BlueViolet);
-                    Canvas.SetLeft(rekt, c.Pos[0]);
-                    Canvas.SetTop(rekt, c.Pos[1]);
-
-                    canvas.Children.Add(rekt);
                 }
                 if (n[0] == end[0] && n[1] == end[1])
                 {

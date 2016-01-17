@@ -20,6 +20,7 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -27,6 +28,7 @@
             <Button Grid.Row="0" Click="Button_Click_Start" >Put start</Button>
             <Button Grid.Row="1" Click="Button_Click_End" >Put end</Button>
             <Button Grid.Row="2" Click="Button_Click_Find_Path" >Find path</Button>
+            <ComboBox Grid.Row="3" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged" SelectedIndex="{Binding COMBOIndex, Mode=TwoWay}"/>
         </Grid>
     </Grid>
 </Window>

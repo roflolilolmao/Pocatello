@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Pocatello
+﻿namespace Pocatello
 {
     class Node
     {
@@ -112,9 +106,16 @@ namespace Pocatello
         public override bool Equals(object obj)
         {
             int[] c = obj as int[];
-            return (c[0] == pos[0]) && (c[1] == pos[1]);
+            return c[0] == pos[0] && c[1] == pos[1];
         }
-
+        public static bool operator ==(Node x, Node y)
+        {
+            return x.Pos[0] == y.Pos[0] && x.Pos[1] == y.Pos[1];
+        }
+        public static bool operator !=(Node x, Node y)
+        {
+            return x.Pos[0] != y.Pos[0] || x.Pos[1] != y.Pos[1];
+        }
         public override int GetHashCode()
         {
             return base.GetHashCode();
