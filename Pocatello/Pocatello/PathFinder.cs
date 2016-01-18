@@ -8,6 +8,7 @@ namespace Pocatello
     class PathFinder
     {
         public delegate void AlgoDelegate(Node c);
+        public delegate int HeuristicDelegate(int[] n);
 
         private List<Node> open = new List<Node>();
         private List<Node> closed = new List<Node>();
@@ -16,8 +17,11 @@ namespace Pocatello
         private Node pathNode = null;
         private bool done = false;
 
-        public Stack<int[]> run(byte[,] obstacles, int[] start, int[] end, AlgoDelegate alg, BackgroundWorker bgw)
+        private HeuristicDelegate h;
+
+        public Stack<int[]> run(byte[,] obstacles, int[] start, int[] end, AlgoDelegate alg, HeuristicDelegate h, BackgroundWorker bgw)
         {
+            this.h = h;
             this.end = end;
             this.obstacles = obstacles;
 
@@ -32,7 +36,7 @@ namespace Pocatello
                 obstacles[obstacles.GetLength(0) - 1, i] = 1;
             }
 
-            open.Add(new Node(start, HManhattan(start)));
+            open.Add(new Node(start, h(start)));
             if (obstacles[open[0].Pos[0], open[0].Pos[1]] == 1 || obstacles[end[0], end[1]] == 1)
             {
                 open.RemoveAt(0);
@@ -112,41 +116,41 @@ namespace Pocatello
             {
                 if (n[0] == end[0] && n[1] == end[1])
                 {
-                    insert(new Node(c, n, g, HManhattan(n), d));
+                    insert(new Node(c, n, g, h(n), d));
                     return true;
                 }
                 if (Math.Abs(d[0]) + Math.Abs(d[1]) == 1)
                 {
                     if ((obstacles[n[0] + d[1], n[1] + d[0]] == 1) && (obstacles[n[0] + d[1] + d[0], n[1] + d[0] + d[1]] == 0))
                     {
-                        insert(new Node(c, n, g, HManhattan(n), d));
+                        insert(new Node(c, n, g, h(n), d));
                         return true;
                     }
                     if ((obstacles[n[0] - d[1], n[1] - d[0]] == 1) && (obstacles[n[0] - d[1] + d[0], n[1] - d[0] + d[1]] == 0))
                     {
-                        insert(new Node(c, n, g + 10, HManhattan(n), d));
+                        insert(new Node(c, n, g + 10, h(n), d));
                         return true;
                     }
                     return lookForNodeJPS(c, d, g + 10, new int[] { n[0] + d[0], n[1] + d[1] });
                 }
                 else if (Math.Abs(d[0]) + Math.Abs(d[1]) == 2)
                 {
-                    if (lookForNodeJPS(new Node(c, n, g, HManhattan(n), d), new int[] { d[0], 0 }, g + 10, new int[] { n[0] + d[0], n[1] }))
+                    if (lookForNodeJPS(new Node(c, n, g, h(n), d), new int[] { d[0], 0 }, g + 10, new int[] { n[0] + d[0], n[1] }))
                     {
-                        insert(new Node(c, n, g, HManhattan(n), d));
+                        insert(new Node(c, n, g, h(n), d));
                     }
-                    if (lookForNodeJPS(new Node(c, n, g, HManhattan(n), d), new int[] { 0, d[1] }, g + 10, new int[] { n[0], n[1] + d[1] }))
+                    if (lookForNodeJPS(new Node(c, n, g, h(n), d), new int[] { 0, d[1] }, g + 10, new int[] { n[0], n[1] + d[1] }))
                     {
-                        insert(new Node(c, n, g, HManhattan(n), d));
+                        insert(new Node(c, n, g, h(n), d));
                     }
                     if (obstacles[n[0] - d[0], n[1]] == 1 && obstacles[n[0] - d[0], n[1] + d[1]] == 0)
                     {
-                        insert(new Node(c, n, g, HManhattan(n), d));
+                        insert(new Node(c, n, g, h(n), d));
                         return true;
                     }
                     if (obstacles[n[0], n[1] - d[1]] == 1 && obstacles[n[0] + d[0], n[1] - d[1]] == 0)
                     {
-                        insert(new Node(c, n, g, HManhattan(n), d));
+                        insert(new Node(c, n, g, h(n), d));
                         return true;
                     }
                     return lookForNodeJPS(c, d, g + 14, new int[] { n[0] + d[0], n[1] + d[1] });
@@ -178,7 +182,7 @@ namespace Pocatello
             {
                 return;
             }
-            insert(new Node(c, n, c.G + g, HManhattan(n), d));
+            insert(new Node(c, n, c.G + g, h(n), d));
         }
         
         private bool ignore(int[] n)
@@ -224,12 +228,21 @@ namespace Pocatello
                 }
             }
         }
-
-        private int HManhattan(int[] n)
+        public int HManhattan(int[] n)
         {
             int dx = Math.Abs(n[0] - end[0]);
             int dy = Math.Abs(n[1] - end[1]);
             return (dx + dy) * 10;
+        }
+        public int HDijkstra(int[] n)
+        {
+            return 0;
+        }
+        public int HEuclid(int[] n)
+        {
+            int dx = Math.Abs(n[0] - end[0]);
+            int dy = Math.Abs(n[1] - end[1]);
+            return (int)Math.Sqrt(dx * dx + dy * dy) * 10;
         }
     }
 }

@@ -23,7 +23,8 @@ namespace Pocatello
         private double obstacleThickness = 5;
         private const double CIRCLEDIAMETER = 10;
 
-        public int COMBOIndex { get; set; }
+        public int AlgoIndex { get; set; }
+        public int HeuristicIndex { get; set; }
 
         public MainWindow()
         {
@@ -170,19 +171,33 @@ namespace Pocatello
             bgw.RunWorkerAsync(obstacles);
         }
 
-        private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void ComboBoxAlgo_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            
+            AlgoIndex = (sender as ComboBox).SelectedIndex;
+        }
+        private void ComboBoxHeuristic_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            HeuristicIndex = (sender as ComboBox).SelectedIndex;
         }
 
-        private void ComboBox_Loaded(object sender, RoutedEventArgs e)
+        private void ComboBoxAlgo_Loaded(object sender, RoutedEventArgs e)
         {
             List<string> data = new List<string>();
             data.Add("A*");
             data.Add("JPS");
             var comboBox = sender as ComboBox;
             comboBox.ItemsSource = data;
-            COMBOIndex = 1;
+            AlgoIndex = 1;
+        }
+        private void ComboBoxHeuristic_Loaded(object sender, RoutedEventArgs e)
+        {
+            List<string> data = new List<string>();
+            data.Add("Manhattan");
+            data.Add("Dijkstra");
+            data.Add("Euclid");
+            var comboBox = sender as ComboBox;
+            comboBox.ItemsSource = data;
+            AlgoIndex = 3;
         }
 
         /*************
@@ -193,7 +208,8 @@ namespace Pocatello
         {
             PathFinder pf = new PathFinder();
             PathFinder.AlgoDelegate alg = null;
-            switch (COMBOIndex)
+            PathFinder.HeuristicDelegate h = null;
+            switch (AlgoIndex)
             {
                 case 0:
                     alg = pf.lookForNeighbours;
@@ -202,7 +218,19 @@ namespace Pocatello
                     alg = pf.lookForNeighboursJPS;
                     break;
             }
-            e.Result = pf.run((byte[,])e.Argument, new int[2] { (int)start.X, (int)start.Y }, new int[2] { (int)end.X, (int)end.Y },  alg, (BackgroundWorker)sender);
+            switch (HeuristicIndex)
+            {
+                case 0:
+                    h = pf.HManhattan;
+                    break;
+                case 1:
+                    h = pf.HDijkstra;
+                    break;
+                case 2:
+                    h = pf.HEuclid;
+                    break;
+            }
+            e.Result = pf.run((byte[,])e.Argument, new int[2] { (int)start.X, (int)start.Y }, new int[2] { (int)end.X, (int)end.Y },  alg, h, (BackgroundWorker)sender);
         }
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
