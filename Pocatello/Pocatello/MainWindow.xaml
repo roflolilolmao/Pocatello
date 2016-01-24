@@ -9,14 +9,18 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
+            <RowDefinition Height="30" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="200" />
         </Grid.ColumnDefinitions>
+        <Label Grid.Row="1" Grid.Column="0" x:Name="Label"  Visibility="Hidden"/>
         <Canvas Grid.Row="0" Grid.Column="0" Background="Bisque" MouseLeftButtonDown="myCanvas_MouseLeftButtonDown" MouseLeftButtonUp="myCanvas_MouseLeftButtonUp" MouseMove="myCanvas_MouseMove" x:Name="myCanvas"/>
-        <Grid Grid.Row="0" Grid.Column="1" Width="200" Background="AliceBlue">
+        <Grid Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Width="200" Background="AliceBlue">
             <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="auto" />
@@ -31,6 +35,8 @@
             <Button Grid.Row="2" Click="Button_Click_Find_Path" >Find path</Button>
             <ComboBox Grid.Row="3" Loaded="ComboBoxAlgo_Loaded" SelectionChanged="ComboBoxAlgo_SelectionChanged" />
             <ComboBox Grid.Row="4" Loaded="ComboBoxHeuristic_Loaded" SelectionChanged="ComboBoxHeuristic_SelectionChanged" />
+            <Button Grid.Row="5" Click="Button_Click_Clear" >Clear</Button>
+            <Button Grid.Row="6" Click="Button_Click_Bitmap" >Save bitmap</Button>
         </Grid>
     </Grid>
 </Window>

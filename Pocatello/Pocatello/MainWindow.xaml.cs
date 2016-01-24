@@ -7,6 +7,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Diagnostics;
+using System;
 
 namespace Pocatello
 {
@@ -23,6 +25,7 @@ namespace Pocatello
         private double obstacleThickness = 5;
         private const double CIRCLEDIAMETER = 10;
 
+        private Stopwatch sw = new Stopwatch();
         public int AlgoIndex { get; set; }
         public int HeuristicIndex { get; set; }
 
@@ -41,6 +44,33 @@ namespace Pocatello
             ellipse.Height = CIRCLEDIAMETER;
 
             myCanvas.Children.Add(ellipse);
+        }
+
+        private System.Drawing.Bitmap CanvasToBitmap()
+        {
+            int w = (int)myCanvas.RenderSize.Width;
+            int h = (int)myCanvas.RenderSize.Height;
+
+            var target = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
+            var brush = new VisualBrush(myCanvas);
+
+            var visual = new DrawingVisual();
+            var drawingContext = visual.RenderOpen();
+
+            drawingContext.DrawRectangle(brush, null, new Rect(new Point(0, 0), new Point(w, h)));
+
+            drawingContext.PushOpacityMask(brush);
+
+            drawingContext.Close();
+
+            target.Render(visual);
+
+            MemoryStream stream = new MemoryStream();
+            BitmapEncoder encoder = new BmpBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(target));
+            encoder.Save(stream);
+
+            return new System.Drawing.Bitmap(stream);
         }
 
         private void myCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -113,36 +143,34 @@ namespace Pocatello
                 DrawEllipse(Colors.Red, this.end);
         }
 
+        private void Button_Click_Clear(object sender, RoutedEventArgs e)
+        {
+            lines = new List<Polyline>();
+            start = new Point(-1, -1);
+            end = new Point(-1, -1);
+            redraw();
+        }
+
+        private void Button_Click_Bitmap(object sender, RoutedEventArgs e)
+        {
+            System.Drawing.Bitmap bitmap = CanvasToBitmap();
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
+            dialog.Filter = "Bitmap image (*.bmp)|*.bmp";
+            dialog.DefaultExt = "bmp";
+            if ((bool)dialog.ShowDialog())
+            {
+                bitmap.Save(dialog.FileName, System.Drawing.Imaging.ImageFormat.Bmp);
+            }
+        }
+
         private void Button_Click_Find_Path(object sender, RoutedEventArgs e)
         {
             redraw();
 
-            int w = (int)myCanvas.RenderSize.Width;
-            int h = (int)myCanvas.RenderSize.Height;
+            System.Drawing.Bitmap bitmap = CanvasToBitmap();
 
-            var target = new RenderTargetBitmap(w, h, 96, 96, PixelFormats.Pbgra32);
-            var brush = new VisualBrush(myCanvas);
-
-            var visual = new DrawingVisual();
-            var drawingContext = visual.RenderOpen();
-
-            drawingContext.DrawRectangle(brush, null, new Rect(new Point(0, 0), new Point(w, h)));
-
-            drawingContext.PushOpacityMask(brush);
-
-            drawingContext.Close();
-
-            target.Render(visual);
-
-            MemoryStream stream = new MemoryStream();
-            BitmapEncoder encoder = new BmpBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(target));
-            encoder.Save(stream);
-
-            System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(stream);
-
-            w = bitmap.Width;
-            h = bitmap.Height;
+            int w = bitmap.Width;
+            int h = bitmap.Height;
 
             byte[,] obstacles = new byte[w, h];
             for (int i = 0; i < w; i++)
@@ -168,6 +196,9 @@ namespace Pocatello
 
             bgw.WorkerReportsProgress = true;
 
+            Label.Visibility = Visibility.Hidden;
+            sw.Start();
+
             bgw.RunWorkerAsync(obstacles);
         }
 
@@ -187,7 +218,8 @@ namespace Pocatello
             data.Add("JPS");
             var comboBox = sender as ComboBox;
             comboBox.ItemsSource = data;
-            AlgoIndex = 1;
+            AlgoIndex = 0;
+            comboBox.SelectedIndex = AlgoIndex;
         }
         private void ComboBoxHeuristic_Loaded(object sender, RoutedEventArgs e)
         {
@@ -197,7 +229,8 @@ namespace Pocatello
             data.Add("Euclid");
             var comboBox = sender as ComboBox;
             comboBox.ItemsSource = data;
-            AlgoIndex = 3;
+            HeuristicIndex = 0;
+            comboBox.SelectedIndex = HeuristicIndex;
         }
 
         /*************
@@ -218,6 +251,7 @@ namespace Pocatello
                     alg = pf.lookForNeighboursJPS;
                     break;
             }
+            Console.WriteLine(HeuristicIndex);
             switch (HeuristicIndex)
             {
                 case 0:
@@ -234,18 +268,31 @@ namespace Pocatello
         }
         private void backgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            sw.Stop();
             var path = (Stack<int[]>) e.Result;
-            Polyline pl = new Polyline();
-            while (path.Count > 0)
+            Label.Visibility = Visibility.Visible;
+            if (path.Count == 1)
             {
-                int[] i = path.Pop();
-                pl.Points.Add(new Point(i[0], i[1]));
+                Label.Content = "No path found in " + sw.ElapsedMilliseconds + " milliseconds";
             }
+            else
+            {
+                Polyline pl = new Polyline();
+                while (path.Count > 0)
+                {
+                    int[] i = path.Pop();
+                    pl.Points.Add(new Point(i[0], i[1]));
+                }
 
-            pl.Stroke = new SolidColorBrush(Colors.Blue);
-            pl.StrokeThickness = obstacleThickness;
+                pl.Stroke = new SolidColorBrush(Colors.Cyan);
+                pl.StrokeThickness = obstacleThickness;
 
-            myCanvas.Children.Add(pl);
+                myCanvas.Children.Add(pl);
+                DrawEllipse(Colors.Green, start);
+                DrawEllipse(Colors.Red, end);
+                Label.Content = "Found path in " + sw.ElapsedMilliseconds + " milliseconds";
+            }
+            sw.Reset();
         }
         private void backgroundWorker1_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
